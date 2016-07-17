@@ -9,12 +9,13 @@ import (
 
 type Series struct {
     Name        string
-    Url         string  // base url? link of chapters?
+    Url         string  // manga detail page url
     Chapters    []*Chapter
     Directory   string
     baseDir     string
 }
 
+var num_dl_threads int = 4
 
 func NewSeries(url string) (*Series, error) {
     // validate url
@@ -52,7 +53,7 @@ func NewSeries(url string) (*Series, error) {
     sort.Strings(det_urls)
     for _, u := range det_urls {
         if re_urlch.MatchString(u) {
-            s.AddChapter(u)
+            s.addChapter(u)
         }
     }
 
@@ -74,24 +75,27 @@ func (s *Series) getDir() string {
     return s.Directory
 }
 
-func (s *Series) AddChapter(url string) error {
+func (s *Series) addChapter(url string) error {
 
-    var dir string
+    var name string
     chNum := re_urlch.FindStringSubmatch(url)
 
     // Use the chapter number from MangaHere.  This accounts for extra chapters
     // quite well (eg, ch017.5).  Fall back to counting chapters and adding one.
     if len(chNum) >= 2 && chNum[1] != "" {
-        dir = fmt.Sprintf("%s/c%s", s.getDir(), chNum[1])
+        name = fmt.Sprintf("c%s", chNum[1])
     } else {
-        dir = fmt.Sprintf("%s/c_%03d", s.getDir(), len(s.Chapters) + 1)
+        name = fmt.Sprintf("c_%03d", len(s.Chapters) + 1)
     }
+
+    dir := fmt.Sprintf("%s/%s", s.getDir(), name)
 
     // Add the chapters.  This does not DL them, just creates their directories.
     c, err := NewChapter(url, dir)
     if err != nil {
         return err
     }
+    c.Name = name
 
     s.Chapters = append(s.Chapters, c)
     return nil
@@ -99,8 +103,14 @@ func (s *Series) AddChapter(url string) error {
 
 func dlChapters(queue chan *Chapter, wg *sync.WaitGroup) {
     for c := range queue {
-        if err := c.GetPageUrls(); err != nil {
-            fmt.Printf("Error DLing chapter: %s\n", err)
+        if err := c.getPageUrls(); err != nil {
+            if err == emptyChapter {
+                if err = c.rmdir(); err != nil {
+                    fmt.Printf("\nError deleting empty chapter directory: %s\n", err)
+                }
+            } else {
+                fmt.Printf("\nError DLing chapter: %s\n", err)
+            }
         }
         printProgressAdd(1)
         wg.Done()
@@ -109,28 +119,27 @@ func dlChapters(queue chan *Chapter, wg *sync.WaitGroup) {
 
 func dlPages(queue chan *dlPageReq, wg *sync.WaitGroup) {
     for p := range queue {
-        if err := p.data.Download(); err != nil {
-            fmt.Printf("Error DLing page: %s\n", err)
-            wg.Done()
-            continue
+        if err := p.data.download(); err != nil {
+            fmt.Printf("\nError DLing page: %s\n", err)
             wg.Done()
             continue
         }
 
-        if err := p.data.Image.WriteToFile(p.directory); err != nil {
-            fmt.Printf("Error saving image: %s\n", err)
+        if err := p.data.Image.writeToFile(p.directory); err != nil {
+            fmt.Printf("\nError saving image: %s\n", err)
         }
         printProgressAdd(1)
         wg.Done()
     }
 }
 
+// TODO return errors or something from here?
 func (s *Series) Download() {
     var wg sync.WaitGroup
     ch_queue := make(chan *Chapter, 1000)
 
     // Spin up some goroutines to DL chapters
-    for i := 0; i < 4; i++ {
+    for i := 0; i < num_dl_threads; i++ {
         go dlChapters(ch_queue, &wg)
     }
 
@@ -156,13 +165,16 @@ func (s *Series) Download() {
     fmt.Println("Finished DLing chapters")
 
     pg_queue := make(chan *dlPageReq, 10000)
-    for i := 0; i < 4; i++ {
+    for i := 0; i < num_dl_threads; i++ {
         go dlPages(pg_queue, &wg)
     }
 
     wg.Add(1)
 
     for _, c := range s.Chapters {
+        if len(c.Pages) == 0 {
+            continue
+        }
         for _, p := range c.Pages {
             wg.Add(1)
             r := &dlPageReq{

@@ -25,7 +25,7 @@ func NewImageData(url string) (*ImageData) {
     return &ImageData{Url: url, Name: filename}
 }
 
-func (i *ImageData) Download() error {
+func (i *ImageData) download() error {
     data, err := downloadThing(i.Url)
     if err != nil {
         return err
@@ -34,12 +34,12 @@ func (i *ImageData) Download() error {
     return nil
 }
 
-func (i *ImageData) WriteToFile(directory string) error {
+func (i *ImageData) writeToFile(directory string) error {
     if len(i.Data) == 0 {
         return fmt.Errorf("No data to write to file.")
     }
 
     fullpath := path.Join(directory, i.Name)
-    return ioutil.WriteFile(fullpath, i.Data, 0755)
+    return ioutil.WriteFile(fullpath, i.Data, 0655)
 }
 

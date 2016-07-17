@@ -22,7 +22,7 @@ func (p PageData) String() string {
     return fmt.Sprintf("<PageData Url:%q>", p.Url)
 }
 
-func (p *PageData) Download() error {
+func (p *PageData) download() error {
     // download page html
     data, err := downloadThing(p.Url)
     if err != nil {
@@ -37,7 +37,7 @@ func (p *PageData) Download() error {
 
     //fmt.Printf("Found image url: %s\n", img_found[1])
     p.Image = NewImageData(fmt.Sprintf("%s", img_found[1]))
-    p.Image.Download()
+    p.Image.download()
     return nil
 }
 
