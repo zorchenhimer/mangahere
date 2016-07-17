@@ -5,7 +5,6 @@ import (
     "sort"
     "strings"
     "sync"
-    "time"
 )
 
 type Series struct {
@@ -124,42 +123,6 @@ func dlPages(queue chan *dlPageReq, wg *sync.WaitGroup) {
         printProgressAdd(1)
         wg.Done()
     }
-}
-
-var pr_count int
-var pr_lock sync.Mutex
-var pr_wg sync.WaitGroup
-
-func printProgress(notdone *bool, total int, prefix string) {
-    //text := fmt.Sprintf("Chapter %03d/%03d", 0, total)
-    lastLen := 0
-    wenotdone := true
-
-    for *notdone || wenotdone {
-        pr_lock.Lock()
-        text := fmt.Sprintf("%s % 4d/%d", prefix, pr_count, total)
-        pr_lock.Unlock()
-
-        lastLen = len(text)
-        fmt.Printf(text)
-        
-        time.Sleep(time.Second / 8)
-
-        for i := 0; i < lastLen; i++ {
-            fmt.Printf("\b")
-        }
-        if *notdone == false {
-            wenotdone = false
-        }
-    }
-    //fmt.Println("")
-    pr_wg.Done()
-}
-
-func printProgressAdd(delta int) {
-    pr_lock.Lock()
-    pr_count += delta
-    pr_lock.Unlock()
 }
 
 func (s *Series) Download() {
