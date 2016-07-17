@@ -1,0 +1,21 @@
+package main
+
+import (
+    "fmt"
+    "log"
+
+    "./scraper"
+)
+
+func main() {
+    var raw_url string
+    fmt.Printf("MangaHere url: ")
+    fmt.Scanln(&raw_url)
+
+    series, err := scraper.NewSeries(raw_url)
+    if err != nil {
+        log.Fatalf("Unable to make new series: %s", err)
+    }
+
+    series.Download()
+}
