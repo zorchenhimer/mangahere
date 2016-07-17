@@ -128,10 +128,6 @@ func dlPages(queue chan *dlPageReq, wg *sync.WaitGroup) {
             fmt.Printf("Error DLing page: %s\n", err)
             wg.Done()
             continue
-        }
-        
-        if err := p.data.Image.Download(); err != nil {
-            fmt.Printf("Error DLing image: %s\n", err)
             wg.Done()
             continue
         }
