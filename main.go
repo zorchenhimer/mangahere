@@ -18,4 +18,8 @@ func main() {
     }
 
     series.Download()
+
+    if err = series.ZipChapters(); err != nil {
+        log.Fatalf("Unable to zip chapters: %s", err)
+    }
 }
