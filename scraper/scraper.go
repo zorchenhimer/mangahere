@@ -16,10 +16,6 @@ type Series struct {
     baseDir     string
 }
 
-type DLJob struct {
-    Url         string
-    Destination string
-}
 
 func NewSeries(url string) (*Series, error) {
     // validate url
@@ -70,16 +66,6 @@ func (s *Series) SetBaseDir(dir string) {
 
 func (s Series) String() string {
     return fmt.Sprintf("<Series Name:%q Directory:%q baseDir:%q Chapters:%d Url:%q>", s.Name, s.Directory, s.baseDir, len(s.Chapters), s.Url)
-}
-
-func (s *Series) FindChapters() error {
-    data, err := downloadThing(s.Url)
-    if err != nil {
-        return fmt.Errorf("Unable to find chapters: %s", err)
-    }
-
-    _ = data
-    return nil
 }
 
 func (s *Series) getDir() string {
@@ -184,7 +170,6 @@ func (s *Series) Download() {
     for i := 0; i < 4; i++ {
         go dlChapters(ch_queue, &wg)
     }
-    fmt.Println("Go routines started")
 
     wg.Add(1)   // Add one to this wg so we don't prematurely close the channel
 
@@ -193,7 +178,6 @@ func (s *Series) Download() {
         wg.Add(1)
         ch_queue <- c
     }
-    fmt.Println("Finished adding chapters to dl")
     nd := true
     pr_wg.Add(1)
     go printProgress(&nd, len(s.Chapters), "Chapter")
@@ -213,8 +197,6 @@ func (s *Series) Download() {
         go dlPages(pg_queue, &wg)
     }
 
-    fmt.Println("Page goroutines started.")
-
     wg.Add(1)
 
     for _, c := range s.Chapters {
@@ -227,7 +209,6 @@ func (s *Series) Download() {
             pg_queue <- r
         }
     }
-    fmt.Println("Page DL queue filled.")
 
     nd = true
     pr_wg.Add(1)

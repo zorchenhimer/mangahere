@@ -16,14 +16,7 @@ var client = &http.Client{Timeout: time.Second * 10}
 
 var re_image = regexp.MustCompile(`src="(http://a.mhcdn.net/store/manga[^"]+)"`)   // "
 var re_url = regexp.MustCompile(`"(http://[^"]+)"`) //" // Because vim on windows is dumb, apparently
-var re_detail = regexp.MustCompile("^http://www.mangahere.co/manga/([^/]+)/([^/]+)?(/[^/]+)?")
 var re_urlch = regexp.MustCompile(`/c(\d+\.?\d*)/`) //
-
-type StringSlice []string
-
-func (s StringSlice) Len() int { return len(s) }
-func (s StringSlice) Less(i, j int) bool { return s[i] < s[j] }
-func (s StringSlice) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 
 func downloadThing(url string) ([]byte, error) {
     req, err := http.NewRequest("GET", url, nil)
