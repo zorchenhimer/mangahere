@@ -22,4 +22,8 @@ func main() {
     if err = series.ZipChapters(); err != nil {
         log.Fatalf("Unable to zip chapters: %s", err)
     }
+
+    if err = series.Cleanup(); err != nil {
+        log.Fatalf("Unable to cleanup: %s", err)
+    }
 }

@@ -75,6 +75,18 @@ func (s *Series) getDir() string {
     return s.Directory
 }
 
+func (s *Series) Cleanup() error {
+    for _, c := range s.Chapters {
+        if ex, _ := exists(c.Directory + ".zip"); ex == false {
+            continue
+        }
+        if err := c.rmr(); err != nil {
+            return err
+        }
+    }
+    return nil
+}
+
 func (s *Series) addChapter(url string) error {
 
     var name string

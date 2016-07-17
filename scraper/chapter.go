@@ -64,3 +64,7 @@ func (c *Chapter) rmdir() error {
     return os.Remove(c.Directory)
 }
 
+func (c *Chapter) rmr() error {
+    return os.RemoveAll(c.Directory)
+}
+

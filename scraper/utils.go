@@ -5,6 +5,7 @@ import (
     "fmt"
     "io/ioutil"
     "net/http"
+    "os"
     "regexp"
     "strings"
     "sync"
@@ -125,5 +126,14 @@ func printProgressAdd(delta int) {
     pr_lock.Lock()
     pr_count += delta
     pr_lock.Unlock()
+}
+
+// exists returns whether the given file or directory exists or not.
+// Taken from https://stackoverflow.com/a/10510783
+func exists(path string) (bool, error) {
+    _, err := os.Stat(path)
+    if err == nil { return true, nil }
+    if os.IsNotExist(err) { return false, nil }
+    return true, err
 }
 
