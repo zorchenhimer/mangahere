@@ -37,7 +37,9 @@ func (p *PageData) download() error {
 
     //fmt.Printf("Found image url: %s\n", img_found[1])
     p.Image = NewImageData(fmt.Sprintf("%s", img_found[1]))
-    p.Image.download()
+    if err := p.Image.download(); err != nil {
+        return err
+    }
     return nil
 }
 

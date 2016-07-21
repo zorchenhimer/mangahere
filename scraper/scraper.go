@@ -16,6 +16,7 @@ type Series struct {
 }
 
 var num_dl_threads int = 4
+const retry_count int = 4
 
 func NewSeries(url string) (*Series, error) {
     // validate url
@@ -130,14 +131,24 @@ func dlChapters(queue chan *Chapter, wg *sync.WaitGroup) {
 }
 
 func dlPages(queue chan *dlPageReq, wg *sync.WaitGroup) {
+    var err error
     for p := range queue {
-        if err := p.data.download(); err != nil {
-            fmt.Printf("\nError DLing page: %s\n", err)
+        // Retry downloading the page retry_count times.  Give up after that
+        // many uncessful attempts.
+        for try := 0; try < retry_count; try++ {
+            if err = p.data.download(); err == nil {
+                break
+            } else {
+                fmt.Printf("\nError downloading page, retrying. [%d/%d]\n", try + 1, retry_count)
+            }
+        }
+        if err != nil {
+            fmt.Printf("\nToo many failed attempts to download page: %s\n", err)
             wg.Done()
             continue
         }
 
-        if err := p.data.Image.writeToFile(p.directory); err != nil {
+        if err = p.data.Image.writeToFile(p.directory); err != nil {
             fmt.Printf("\nError saving image: %s\n", err)
         }
         printProgressAdd(1)
