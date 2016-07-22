@@ -25,7 +25,7 @@ func NewSeries(url string) (*Series, error) {
     // validate url
     u := strings.Split(strings.Trim(url, "/"), "/")
     if len(u) < 5 || u[2] != "www.mangahere.co" {
-        return nil, fmt.Errorf("Invalid mangahere url: %q", u[2])
+        return nil, fmt.Errorf("Invalid mangahere url: %q", u)
     }
 
     if u[3] != "manga" {

@@ -3,14 +3,21 @@ package main
 import (
     "fmt"
     "log"
+    "strings"
 
     "./scraper"
 )
 
 func main() {
     var raw_url string
-    fmt.Printf("MangaHere url: ")
-    fmt.Scanln(&raw_url)
+    for len(raw_url) == 0 {
+        fmt.Printf("MangaHere url: ")
+        fmt.Scanln(&raw_url)
+    }
+
+    if strings.ToLower(raw_url) == "exit" {
+        return
+    }
 
     series, err := scraper.NewSeries(raw_url)
     if err != nil {
