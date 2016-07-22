@@ -79,6 +79,9 @@ func NewSeries(url string) (*Series, error) {
     return s, nil
 }
 
+// SetBaseDir() will set the base directory that the manga will be downloaded
+// to.  This defaults to "manga".
+// FIXME: Make baseDir absolute?
 func (s *Series) SetBaseDir(dir string) {
     s.baseDir = dir
 }
@@ -94,6 +97,8 @@ func (s *Series) getDir() string {
     return s.Directory
 }
 
+// Cleanup() will remove any chapter folders that have already been zipped up.
+// It will also remove any empty chapter folders.
 func (s *Series) Cleanup() error {
     for _, c := range s.Chapters {
         if itm, err := filepath.Glob(c.Directory + "/*"); err == nil && len(itm) == 0 {
@@ -113,9 +118,12 @@ func (s *Series) Cleanup() error {
             return err
         }
     }
+
     return nil
 }
 
+// Add a chapter to a series from its URL. Note that this does not download the
+// chapter, it only creates the object.
 func (s *Series) addChapter(url string) error {
 
     var name string
@@ -142,6 +150,7 @@ func (s *Series) addChapter(url string) error {
     return nil
 }
 
+// chapter download worker goroutine
 func dlChapters(queue chan *Chapter, wg *sync.WaitGroup) {
     for c := range queue {
         if err := c.getPageUrls(); err != nil {
@@ -158,6 +167,7 @@ func dlChapters(queue chan *Chapter, wg *sync.WaitGroup) {
     }
 }
 
+// page download worker goroutine
 func dlPages(queue chan *dlPageReq, wg *sync.WaitGroup) {
     var err error
     for p := range queue {
@@ -176,6 +186,8 @@ func dlPages(queue chan *dlPageReq, wg *sync.WaitGroup) {
             continue
         }
 
+        // Retrying here would probably have no effect whatsoever on the
+        // outcome (insufficient privileges, etc), so don't bother.
         if err = p.data.Image.writeToFile(p.directory); err != nil {
             fmt.Printf("\nError saving image: %s\n", err)
         }
