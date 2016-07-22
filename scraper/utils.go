@@ -12,6 +12,11 @@ import (
     "time"
 )
 
+type YesNo bool
+
+const Yes YesNo = true
+const No  YesNo = false
+
 const mh_string string = "www.mangahere.co/manga/"
 
 // The client used for downloading things.
@@ -135,5 +140,30 @@ func exists(path string) (bool, error) {
     if err == nil { return true, nil }
     if os.IsNotExist(err) { return false, nil }
     return true, err
+}
+
+func yesNoPrompt(prompt string, default_option YesNo) YesNo {
+    if default_option == Yes {
+        prompt += " [Y/n] "
+    } else {
+        prompt += " [y/N] "
+    }
+
+    for {
+        input := ""
+        fmt.Print(prompt)
+        fmt.Scanln(&input)
+
+        if len(input) == 0 {
+            return default_option
+        }
+
+        switch strings.ToLower(input) {
+            case "y", "yes":
+                return Yes
+            case "n", "no":
+                return No
+        }
+    }
 }
 

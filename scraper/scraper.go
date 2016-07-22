@@ -2,6 +2,8 @@ package scraper
 
 import (
     "fmt"
+    "os"
+    "path/filepath"
     "sort"
     "strings"
     "sync"
@@ -13,6 +15,7 @@ type Series struct {
     Chapters    []*Chapter
     Directory   string
     baseDir     string
+    start_idx   int     // chapter index to start on
 }
 
 var num_dl_threads int = 4
@@ -29,8 +32,11 @@ func NewSeries(url string) (*Series, error) {
         return nil, fmt.Errorf("Not a manga url: %q", u[3])
     }
 
+    // This is a chapter or page url, not a detail url.  Save the chapter and
+    // we'll handle this in a little bit.
+    start_chapter := ""
     if len(u) > 5 {
-        fmt.Println("Probably a chapter url.  Handle this eventually.")
+        start_chapter = u[5]
     }
 
     fmt.Printf("Manga name: %q\n", u[4])
@@ -47,14 +53,26 @@ func NewSeries(url string) (*Series, error) {
         Name:       prettifyName(u[4]),
         Directory:  u[4],
         baseDir:    "manga",
+        start_idx:  0,
     }
 
     // Get the chapters
     det_urls := getUrls(manga_det_html, s.Url)
     sort.Strings(det_urls)
-    for _, u := range det_urls {
+    for idx, u := range det_urls {
         if re_urlch.MatchString(u) {
             s.addChapter(u)
+        }
+
+        // If we were passed a chapter url earlier, and it matches the current
+        // one, ask if we should start at the given chapter.
+        if idx > 0 {
+            if u == s.Url + start_chapter + "/" {
+                ans := yesNoPrompt(fmt.Sprintf("Start from chapter %q? ", start_chapter), Yes)
+                if ans == Yes {
+                    s.start_idx = idx - 1
+                }
+            }
         }
     }
 
@@ -78,6 +96,16 @@ func (s *Series) getDir() string {
 
 func (s *Series) Cleanup() error {
     for _, c := range s.Chapters {
+        if itm, err := filepath.Glob(c.Directory + "/*"); err == nil && len(itm) == 0 {
+            err = c.rmdir()
+            if err != nil {
+                // Only display an error if it isn't a "this directory doesn't exist" type error
+                if !os.IsNotExist(err) {
+                    fmt.Printf("Error removing 'empty' chapter directory: %s", err)
+                }
+            }
+            continue
+        }
         if ex, _ := exists(c.Directory + ".zip"); ex == false {
             continue
         }
@@ -169,13 +197,13 @@ func (s *Series) Download() {
     wg.Add(1)   // Add one to this wg so we don't prematurely close the channel
 
     // Add chapters to DL queue
-    for _, c := range s.Chapters {
+    for _, c := range s.Chapters[s.start_idx:] {
         wg.Add(1)
         ch_queue <- c
     }
     nd := true
     pr_wg.Add(1)
-    go printProgress(&nd, len(s.Chapters), "Chapter")
+    go printProgress(&nd, len(s.Chapters) - s.start_idx, "Chapter")
 
     // Wait for chapters to finish, then cleanup.
     wg.Done()
@@ -193,8 +221,9 @@ func (s *Series) Download() {
     }
 
     wg.Add(1)
+    length := 0
 
-    for _, c := range s.Chapters {
+    for _, c := range s.Chapters[s.start_idx:] {
         if len(c.Pages) == 0 {
             continue
         }
@@ -205,18 +234,12 @@ func (s *Series) Download() {
                 directory: c.Directory,
             }
             pg_queue <- r
+            length++
         }
     }
 
     nd = true
     pr_wg.Add(1)
-    length := 0
-    for _, c := range s.Chapters {
-        for _, _ = range c.Pages {
-            length++
-        }
-    }
-
     go printProgress(&nd, length, "Page")
 
     wg.Done()

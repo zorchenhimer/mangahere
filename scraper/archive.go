@@ -26,7 +26,7 @@ func (s *Series) ZipChapters() error {
     var zips []zipFile
     root := s.getDir()
 
-    for _, c := range s.Chapters {
+    for _, c := range s.Chapters[s.start_idx:] {
         z := zipFile{
             path: root + "/" + c.Name + ".zip",
             files: []string{},
