@@ -16,6 +16,7 @@ type Series struct {
     Directory   string
     baseDir     string
     start_idx   int     // chapter index to start on
+    Force       bool    // Force downloading of chapters
 }
 
 var num_dl_threads int = 4
@@ -162,6 +163,7 @@ func dlChapters(queue chan *Chapter, wg *sync.WaitGroup) {
                 fmt.Printf("\nError DLing chapter: %s\n", err)
             }
         }
+        c.downloaded = true
         printProgressAdd(1)
         wg.Done()
     }
@@ -210,8 +212,13 @@ func (s *Series) Download() {
 
     // Add chapters to DL queue
     for _, c := range s.Chapters[s.start_idx:] {
-        wg.Add(1)
-        ch_queue <- c
+        // Download chapter if the directory is empty, or if the force flag is
+        // given at the command line.
+        if c.emptyChapter() || s.Force {
+            wg.Add(1)
+            ch_queue <- c
+        }
+        fmt.Println("")
     }
     nd := true
     pr_wg.Add(1)
@@ -236,7 +243,7 @@ func (s *Series) Download() {
     length := 0
 
     for _, c := range s.Chapters[s.start_idx:] {
-        if len(c.Pages) == 0 {
+        if !c.downloaded || len(c.Pages) == 0 {
             continue
         }
         for _, p := range c.Pages {

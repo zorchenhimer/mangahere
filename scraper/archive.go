@@ -32,6 +32,11 @@ func (s *Series) ZipChapters() error {
             files: []string{},
         }
 
+        // Skip files that already exist
+        if ex, _ := exists(z.path); ex && !s.Force {
+            continue
+        }
+
         files, err := filepath.Glob(c.Directory + "/*.*")
         if err != nil {
             return fmt.Errorf("Error globbing: %s", err)

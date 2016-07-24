@@ -3,6 +3,7 @@ package scraper
 import (
     "fmt"
     "os"
+    "path/filepath"
     "strings"
 )
 
@@ -12,6 +13,7 @@ type Chapter struct {
     Directory   string
     Url         string
     Pages       []*PageData
+    downloaded  bool
 }
 
 var emptyChapter error = fmt.Errorf("Empty chapter")
@@ -66,5 +68,19 @@ func (c *Chapter) rmdir() error {
 
 func (c *Chapter) rmr() error {
     return os.RemoveAll(c.Directory)
+}
+
+// Has anything been downloaded for the chapter?  Checks for the existence of
+/// the chapter's zip file, and anything in its directory, in that order.
+func (c *Chapter) emptyChapter() bool {
+    if ex, _ := exists(c.Directory + ".zip"); ex {
+        return false
+    }
+
+    items, _ := filepath.Glob(c.Directory + "/*")
+    if len(items) == 0 {
+        return true
+    }
+    return false
 }
 
