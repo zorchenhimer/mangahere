@@ -6,7 +6,7 @@ import (
     "log"
     "strings"
 
-    "./scraper"
+    "github.com/zorchenhimer/mangahere/scraper"
 )
 
 func main() {
