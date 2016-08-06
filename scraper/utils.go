@@ -22,7 +22,7 @@ const mh_string string = "www.mangahere.co/manga/"
 // The client used for downloading things.
 var client = &http.Client{Timeout: time.Second * 10}
 
-var re_image = regexp.MustCompile(`src="(http://a.mhcdn.net/store/manga[^"]+)"`)   // "
+var re_image = regexp.MustCompile(`src="(http://[^"]+\.mhcdn\.net/store/manga[^"]+)"`)   // "
 var re_url = regexp.MustCompile(`"(http://[^"]+)"`) //" // Because vim on windows is dumb, apparently
 var re_urlch = regexp.MustCompile(`/c(\d+\.?\d*)/`) //
 
