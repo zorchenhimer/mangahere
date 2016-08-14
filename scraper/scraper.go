@@ -218,7 +218,6 @@ func (s *Series) Download() {
             wg.Add(1)
             ch_queue <- c
         }
-        fmt.Println("")
     }
     nd := true
     pr_wg.Add(1)
