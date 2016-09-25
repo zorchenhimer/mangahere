@@ -6,6 +6,5 @@ go:
     - tip
 
 script:
-- go build
+    - go test -v ./...
 
-install: true
